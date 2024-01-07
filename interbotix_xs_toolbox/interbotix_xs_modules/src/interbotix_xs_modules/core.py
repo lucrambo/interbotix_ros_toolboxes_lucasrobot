@@ -39,8 +39,7 @@ class InterbotixRobotXSCore(object):
             print((
                 "The robot '%s' is not discoverable. "
                 "Did you enter the correct robot_name parameter? "
-                "Is the xs_sdk node running? "
-                "Quitting..." % self.robot_name))
+                "Quitting..." % robot_model))
             sys.exit(1)
 
         self.srv_set_op_modes = rospy.ServiceProxy("/" + self.robot_name + "/set_operating_modes", OperatingModes)

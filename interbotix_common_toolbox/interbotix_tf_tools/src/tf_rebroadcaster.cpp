@@ -9,7 +9,6 @@ TFRebroadcaster::TFRebroadcaster(ros::NodeHandle *node_handle)
   ros::param::get("~filepath_config", filepath_config_);
   ros::param::get("~topic_to", topic_to_);
   ros::param::get("~topic_from", topic_from_);
-  ros::param::get("~use_incoming_time", use_incoming_time_);
 
   // Load configuration file
   try {
@@ -37,25 +36,24 @@ TFRebroadcaster::TFRebroadcaster(ros::NodeHandle *node_handle)
     frame_itr != all_frames.end();
     frame_itr++)
   {
-    Frame frame = Frame();
     // Get all parent and child frames, insert into map
-    frame.parent_frame_id = frame_itr->first.as<std::string>();
-    frame.child_frame_id = frame_itr->second["child_frame_id"].as<std::string>();
-    frame.prefix = frame_itr->second["prefix"].as<std::string>();
-    frames_.push_back(frame);
+    std::string frame_parent = frame_itr->first.as<std::string>();
+    std::string frame_child = frame_itr->second["child_frame_id"].as<std::string>();
+    std::string prefix = frame_itr->second["prefix"].as<std::string>();
+    frames_.push_back(Frame{frame_parent, frame_child, prefix});
 
-    if (frame.prefix == "") {
+    if (prefix == "") {
       ROS_INFO(
         "[tf_rebroadcaster] Will broadcast TF from frame '%s' to frame '%s'.",
-        frame.child_frame_id.c_str(),
-        frame.prefix.c_str());
+        frame_child.c_str(),
+        prefix.c_str());
     } else {
       // Print out which frames will be rebroadcasted
       ROS_INFO(
         "[tf_rebroadcaster] Will broadcast TF from frame '%s' to frame '%s', prepending prefix '%s'.",
-        frame.parent_frame_id.c_str(),
-        frame.child_frame_id.c_str(),
-        frame.prefix.c_str());
+        frame_parent.c_str(),
+        frame_child.c_str(),
+        prefix.c_str());
     }
   }
 
@@ -68,7 +66,7 @@ void TFRebroadcaster::tf_cb(const tf2_msgs::TFMessage & msg)
 {
   // TODO(lsinterbotix): optimize
   // Loop over each parent/child frame
-  for (auto & frame : frames_) {
+  for (const auto & frame : frames_) {
     // Loop over every transform in message
     for (auto & tf : msg.transforms) {
       // Check if parent and child match
@@ -83,18 +81,8 @@ void TFRebroadcaster::tf_cb(const tf2_msgs::TFMessage & msg)
           tf_.child_frame_id = frame.prefix + tf.child_frame_id;
           tf_.header.frame_id = frame.prefix + tf.header.frame_id;
         }
-        if (!use_incoming_time_) {
-          tf_.header.stamp = ros::Time::now();
-        }
         rebroadcast_tf.transforms.push_back(tf_);
         pub_tf_.publish(rebroadcast_tf);
-        if (!frame.logged) {
-          ROS_INFO(
-            "Broadcasted TF from frame '%s' to frame '%s'. This will only log once.",
-            tf_.child_frame_id.c_str(),
-            tf_.header.frame_id.c_str());
-          frame.logged = true;
-        }
       }
     }
   }

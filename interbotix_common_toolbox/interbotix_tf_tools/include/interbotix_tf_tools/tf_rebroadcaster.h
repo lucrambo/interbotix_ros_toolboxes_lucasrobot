@@ -16,7 +16,6 @@ struct Frame
   std::string parent_frame_id;
   std::string child_frame_id;
   std::string prefix;
-  bool logged = false;
 };
 
 class TFRebroadcaster
@@ -45,13 +44,10 @@ private:
   // String containing the topic that the rebroadcaster should publish to
   std::string topic_to_;
 
-  // Whether or not to use the timestamp on the incoming TF
-  bool use_incoming_time_;
-
   // YAML node containing configuration info
   YAML::Node config_;
 
-  // Vector containing all frames to be re-broadcasted from the configuration
+  // Vector containing all frames to be re-broadcasted from the configuraiton
   std::vector<Frame> frames_;
 };
 
